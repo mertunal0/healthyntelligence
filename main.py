@@ -21,6 +21,7 @@ data_transforms = {
     'train': transforms.Compose([
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation([90, 270]),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
@@ -74,6 +75,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
+    trainAccArray = []
+    trainLossArray = []
+    valAccArray = []
+    valLossArray = []
+
     # her epoch (iterasyon) dönüşünde
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -120,8 +126,14 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                phase, epoch_loss, epoch_acc))
+            print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+
+            if phase == "train":
+                trainAccArray.append(epoch_acc)
+                trainLossArray.append(epoch_loss)
+            if phase == "val":
+                valAccArray.append(epoch_acc)
+                valLossArray.append(epoch_loss)
 
             # deep copy the model
             # validation aşamasında en büyük başarıyı yakalıyoruz ve sonra for dışında kaydediyoruz.
@@ -130,6 +142,21 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 best_model_wts = copy.deepcopy(model.state_dict())
 
         print()
+    plt.figure(2)
+    plt.plot(trainAccArray, label='Training Acc')
+    plt.plot(valAccArray, label='Validation Acc')
+    plt.xlabel('Accuracies')
+    plt.ylabel('Epochs')
+    plt.suptitle("Şekil 1")
+    plt.legend()
+
+    plt.figure(3)
+    plt.plot(trainLossArray, label='Training Loss')
+    plt.plot(valLossArray, label='Validation Loss')
+    plt.suptitle("Şekil 2")
+    plt.xlabel('Losses')
+    plt.ylabel('Epochs')
+    plt.legend()
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
